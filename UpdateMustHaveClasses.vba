@@ -207,6 +207,9 @@ NextImportRow:
         Dim nextRow As Long
         nextRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row + 1
         If nextRow < 3 Then nextRow = 3
+        
+        Dim newStart As Long
+        newStart = nextRow
 
         For Each key In incoming.Keys
             If Not existing.Exists(key) Then
@@ -606,6 +609,18 @@ Private Sub StyleLastSemCell(cell As Range)
         cell.Font.Color = RGB(0, 0, 0)
         cell.Font.Bold = False
     End If
+End Sub
+
+' Applies an outline (all borders) to a rectangular range of cells
+Private Sub ApplyOutlineBorders(ws As Worksheet, firstRow As Long, lastRow As Long, Optional firstCol As Long = 1, Optional lastCol As Long = 4)
+    If lastRow < firstRow Then Exit Sub
+    Dim rng As Range
+    Set rng = ws.Range(ws.Cells(firstRow, firstCol), ws.Cells(lastRow, lastCol))
+    With rng
+        .Borders.LineStyle = xlContinuous
+        .Borders.Weight = xlThin
+        .Borders.ColorIndex = xlAutomatic
+    End With
 End Sub
 
 

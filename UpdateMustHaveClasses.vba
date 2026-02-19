@@ -5,23 +5,19 @@ Option Explicit
 '  Created by Tyler Olson In Spring 2026 for 
 '  Missouri State University Graduate Programs Office.
 '
-'  This script is intended to be used with an imported sheet about
+'  This script is intended to be used with an imported dataset of
 '  student projections, upon running this macro, it will look for
-'  all course sheets (named like "ACC 711 - FA26") and update their
+'  all course sheets (named like "ACC 711 - FA26") and update
 '  student lists based on the imported data. 
 ' 
 '  Since this is automated, there is a few warnings:
-'  1) If the projections sheet has extra lines for a student for notes, it will likely think the student is projected for an additional semester. An attempt to mitigate this was made.
-'  2) If this script errors I've done my best to make sure it fails gracefully without deleting any data, but it's always a good idea to make a backup before running any new script on important data.
+'  1) If the projections sheet has extra lines for a student for notes, 
+'  it will likely think the student is projected for an additional semester. Resulting in incorrect graduation dates.
+' 
+'  2) If this script errors I've done my best to make sure it fails gracefully without deleting any data, 
+'  but it's always a good idea to make a backup before running any new script on important data.
 '
-'  New students are APPENDED at the bottom.
-'  Dropped students are HIGHLIGHTED in yellow — never deleted —
-'  so advisors can review their notes before removing manually.
-'
-'  Works for any semester automatically (FA26, SU27, SP28 ...)
-'  No code changes needed when rolling to a new semester.
 ' ================================================================
-
 
 ' ----------------------------------------------------------------
 '  PUBLIC ENTRY POINT — bound to the "Import Projections" button 
@@ -129,10 +125,14 @@ Sub ImportProjections()
         Dim futureCount As Long
         futureCount = GetFutureColumns(wsImported, semesterCols, semColCount, fullSemName, futureCols)
 
-        ' ── Ensure "Must Have (Yes/No)" header exists in Col E ───
-        If Trim(CStr(ws.Cells(2, 5).Value)) = "" Then
+        ' ── Ensure headers exist in Row 2 ───
+        If Trim(CStr(ws.Cells(2, 3).Value)) = "" Then
             ws.Cells(2, 3).Value = "Must Have (Yes/No)"
-            ws.Cells(2, 5).Font.Bold = True
+            ws.Cells(2, 3).Font.Bold = True
+        End If
+        If Trim(CStr(ws.Cells(2, 4).Value)) = "" Then
+            ws.Cells(2, 4).Value = "Notes"
+            ws.Cells(2, 4).Font.Bold = True
         End If
 
         ' ── Build dictionary: M# -> row  for existing rows 3+ ─
@@ -141,13 +141,13 @@ Sub ImportProjections()
 
         Dim lastDataRow As Long
         lastDataRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
-        If lastDataRow < 3 Then lastDataRow = 2  ' nothing there yet
+        If lastDataRow < 3 Then lastDataRow = 2  ' no current students
 
         Dim r As Long
         For r = 3 To lastDataRow
             Dim exM As String
-            exM = Trim(CStr(ws.Cells(r, 1).Value))
-            If exM <> "" Then existing(exM) = r
+            exM = Trim(CStr(ws.Cells(r, 1).Value)) ' reads the value of column 1,
+            If exM <> "" Then existing(exM) = r ' check to see if the column is empty to identify last data
         Next r
 
         ' ── Build dictionary: M# -> student info  from import ─
@@ -155,21 +155,68 @@ Sub ImportProjections()
         Set incoming = CreateObject("Scripting.Dictionary")
 
         Dim j As Long
+        Dim currentM As String
+        Dim currentNameImport As String
+        Dim tempM As String
+        Dim tempName As String
+        Dim prevVal As Variant
+
         For j = 2 To lastImportRow
+            ' Read M#; if blank assume this row continues the previous student
+            tempM = Trim(CStr(wsImported.Cells(j, colMNum).Value))
             Dim iM As String
-            iM = Trim(CStr(wsImported.Cells(j, colMNum).Value))
-            If iM = "" Or iM = "0" Then GoTo NextImportRow
+            If tempM = "" Or tempM = "0" Then
+                If currentM = "" Then GoTo NextImportRow
+                iM = currentM
+            Else
+                iM = tempM
+                currentM = iM
+            End If
+
+            ' Carry-forward Name when blank on continuation rows
+            tempName = Trim(CStr(wsImported.Cells(j, colName).Value))
+            If tempName <> "" Then currentNameImport = tempName
+            Dim iName As String: iName = currentNameImport
 
             Dim iCourse As String
             iCourse = Trim(CStr(wsImported.Cells(j, colSem).Value))
+            If iCourse = "" Then GoTo NextImportRow
             If Left(iCourse, Len(courseCode)) <> courseCode Then GoTo NextImportRow
 
-            ' Determine last semester flag
+            ' Determine last semester flag for this row
             Dim isLast As String
             isLast = IsLastSemester(wsImported, j, futureCols, futureCount)
 
-            ' Store: Name | Course | LastSemester
-            incoming(iM) = wsImported.Cells(j, colName).Value & "|" & iCourse & "|" & isLast
+            ' Aggregate multiple course rows for the same M# into one entry
+            If incoming.Exists(iM) Then
+                prevVal = incoming(iM)
+                Dim partsPrev() As String
+                partsPrev = Split(prevVal, "|")
+                Dim prevName As String: prevName = partsPrev(0)
+                Dim prevCourses As String: prevCourses = partsPrev(1)
+                Dim prevIsLast As String: prevIsLast = partsPrev(2)
+
+                Dim combinedCourses As String
+                If prevCourses = "" Then
+                    combinedCourses = iCourse
+                ElseIf InStr(prevCourses, iCourse) > 0 Then
+                    combinedCourses = prevCourses
+                Else
+                    combinedCourses = prevCourses & "; " & iCourse
+                End If
+
+                Dim combinedIsLast As String
+                If UCase(prevIsLast) = "NO" Or UCase(isLast) = "NO" Then
+                    combinedIsLast = "No"
+                Else
+                    combinedIsLast = "Yes"
+                End If
+
+                If prevName = "" Then prevName = iName
+                incoming(iM) = prevName & "|" & combinedCourses & "|" & combinedIsLast
+            Else
+                incoming(iM) = iName & "|" & iCourse & "|" & isLast
+            End If
 
 NextImportRow:
         Next j
@@ -181,24 +228,30 @@ NextImportRow:
             existRow = existing(key)
 
             If incoming.Exists(key) Then
-                ' Student still projected — refresh cols A, B, E only
+                ' Student still projected — refresh cols A, B, C, D
                 Dim parts() As String
                 parts = Split(incoming(key), "|")
                 ws.Cells(existRow, 1).Value = key        ' M#
                 ws.Cells(existRow, 2).Value = parts(0)   ' Name
                 ws.Cells(existRow, 3).Value = parts(2)   ' Must Have (Yes/No)
+                
+                ' Add graduation note if this is the last semester
+                If UCase(parts(2)) = "YES" Then
+                    ws.Cells(existRow, 4).Value = "Graduating " & fullSemName
+                    ws.Cells(existRow, 4).Font.Italic = True
+                End If
 
-                ' Style the Last Semester cell
-                StyleLastSemCell ws.Cells(existRow, 5)
+                ' Style the Must Have cell
+                StyleMustHaveCell ws.Cells(existRow, 3)
 
                 ' Clear any dropped-student highlight on this row
-                ws.Range(ws.Cells(existRow, 1), ws.Cells(existRow, 5)).Interior.ColorIndex = xlNone
+                ws.Range(ws.Cells(existRow, 1), ws.Cells(existRow, 4)).Interior.ColorIndex = xlNone
 
             Else
                 ' Student no longer projected — highlight row, don't delete
-                ws.Range(ws.Cells(existRow, 1), ws.Cells(existRow, 5)).Interior.Color = RGB(255, 235, 156)
-                ws.Cells(existRow, 5).Value = "⚠ No longer projected"
-                ws.Cells(existRow, 5).Font.Color = RGB(156, 87, 0)
+                ws.Range(ws.Cells(existRow, 1), ws.Cells(existRow, 4)).Interior.Color = RGB(255, 235, 156)
+                ws.Cells(existRow, 4).Value = "⚠ No longer projected"
+                ws.Cells(existRow, 4).Font.Color = RGB(156, 87, 0)
                 flagged = flagged + 1
             End If
         Next key
@@ -218,7 +271,14 @@ NextImportRow:
                 ws.Cells(nextRow, 1).Value = key     ' M#
                 ws.Cells(nextRow, 2).Value = np(0)   ' Name
                 ws.Cells(nextRow, 3).Value = np(2)   ' Must Have (Yes/No)
-                StyleLastSemCell ws.Cells(nextRow, 5)
+                
+                ' Add graduation note if this is the last semester
+                If UCase(np(2)) = "YES" Then
+                    ws.Cells(nextRow, 4).Value = "Graduating " & fullSemName
+                    ws.Cells(nextRow, 4).Font.Italic = True
+                End If
+                
+                StyleMustHaveCell ws.Cells(nextRow, 3)
                 nextRow = nextRow + 1
                 added = added + 1
             End If
@@ -326,7 +386,6 @@ Sub RefreshDashboard(wsImported As Worksheet, colMNum As Long, colName As Long)
     wsDash.Cells(legRow, 4).Value = "30+  High"
 
     wsDash.Cells(legRow, 6).Value = "⚠ = No longer projected"
-    wsDash.Cells(legRow, 7).Value = "★ = Last semester student"
     wsDash.Rows(legRow).Font.Size = 9
 
     ' ── Table header ─────────────────────────────────────────
@@ -368,13 +427,13 @@ Sub RefreshDashboard(wsImported As Worksheet, colMNum As Long, colName As Long)
             Dim mVal As String : mVal = Trim(CStr(ws.Cells(r, 1).Value))
             If mVal = "" Then GoTo NextDashRow
 
-            Dim eVal As String : eVal = Trim(CStr(ws.Cells(r, 5).Value))
+            Dim mustHaveVal As String : mustHaveVal = Trim(CStr(ws.Cells(r, 3).Value))
 
-            If InStr(eVal, "No longer") > 0 Then
+            If InStr(ws.Cells(r, 4).Value, "No longer") > 0 Then
                 dropped = dropped + 1
             Else
                 projected = projected + 1
-                If UCase(Left(eVal, 1)) = "Y" Then lastSem = lastSem + 1
+                If UCase(Left(mustHaveVal, 1)) = "Y" Then lastSem = lastSem + 1
             End If
 NextDashRow:
         Next r
@@ -451,6 +510,7 @@ NextDashSheet:
     wsDash.Columns("E").ColumnWidth = 18
     wsDash.Columns("F").ColumnWidth = 16
 
+    wsDash.Rows(4).RowHeight = 50 ' Allowing space for the button
     wsDash.Activate
 
 End Sub
@@ -470,7 +530,7 @@ Private Function IsCourseSheet(sName As String) As Boolean
     Dim sem As String
     sem = Trim(parts(UBound(parts)))
     Dim pre As String : pre = UCase(Left(sem, 2))
-    If pre <> "FA" And pre <> "SU" And pre <> "SP" And pre <> "WI" Then Exit Function
+    If pre <> "FA" And pre <> "SU" And pre <> "SP" Then Exit Function
     If Not IsNumeric(Right(sem, 2)) Then Exit Function
     IsCourseSheet = True
 End Function
@@ -581,7 +641,7 @@ Private Function IsLastSemester(ws As Worksheet, iRow As Long, _
                                   futureCols() As Long, _
                                   futureCount As Long) As String
     Dim k As Long
-    For k = 1 To futureCount
+    For k = 1 To futureCount ' check all future semester columns for this student
         Dim v As String
         v = Trim(CStr(ws.Cells(iRow, futureCols(k)).Value))
         If v <> "" And v <> "0" Then
@@ -598,8 +658,8 @@ Private Function IsLastSemester(ws As Worksheet, iRow As Long, _
     IsLastSemester = "Yes"
 End Function
 
-' Applies formatting to a Last Semester cell (col E)
-Private Sub StyleLastSemCell(cell As Range)
+' Applies formatting to a Must Have cell (col C)
+Private Sub StyleMustHaveCell(cell As Range)
     If UCase(Trim(CStr(cell.Value))) = "YES" Then
         cell.Interior.Color = RGB(198, 239, 206)   ' green
         cell.Font.Color = RGB(0, 97, 0)
@@ -652,7 +712,7 @@ Sub SetupDashboard()
 
     ' Place button in a prominent spot below the title
     Dim btn As Object
-    Set btn = wsDash.Buttons.Add(10, 60, 200, 36)
+    Set btn = wsDash.Buttons.Add(10, 80, 200, 36)
     With btn
         .OnAction = "ImportProjections"
         .Caption = "Import Projections"

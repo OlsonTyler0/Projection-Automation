@@ -28,8 +28,6 @@
     Automates student course projections management for graduate programs using Excel and VBA.
     <br />
     <br />
-    <a href="https://github.com/OlsonTyler0/Projection-Automation">View Demo</a>
-    &middot;
     <a href="https://github.com/OlsonTyler0/Projection-Automation/issues/new?labels=bug">Report Bug</a>
     &middot;
     <a href="https://github.com/OlsonTyler0/Projection-Automation/issues/new?labels=enhancement">Request Feature</a>

@@ -42,12 +42,6 @@
     <li>
       <a href="#about-the-project">About The Project</a>
     </li>
-    <li>
-      <a href="#getting-started">Getting Started</a>
-      <ul>
-        <li><a href="#installation">Installation</a></li>
-      </ul>
-    </li>
     <li><a href="#usage">Usage</a></li>
     <li><a href="#license">License</a></li>
     <li><a href="#contact">Contact</a></li>
@@ -66,40 +60,33 @@ This is a script intended to be used with excel sheets historically used by the 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
-<!-- GETTING STARTED -->
-## Getting Started
-
-### Installation
-
-1. Clone the repository
-   ```sh
-   git clone https://github.com/OlsonTyler0/Projection-Automation.git
-   ```
-   ALTERNATIVELY: Copy the data from UpdateMustHave.vba into your clipboard and do the following:
-2. Open your Excel workbook in which you want to use this system
-3. Open the VBA Editor (Alt + F11)
-4. Copy the content from `UpdateMustHaveClasses.vba` into a new module in your workbook
-5. _(Optional)_ Copy content from `DebugResetProjections.vba` into another module for testing/reset capabilities
-6. Save the workbook as `.xlsm` (macro-enabled format)
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-
 <!-- USAGE EXAMPLES -->
 ## Usage
 
 ### Basic Workflow
 
 1. **Prepare your data:**
-   - Import your data into excel using `Data -> Get Data -> From File -> Excel -> Projections sheet` imported sheet will be titled 'imported-data'
-   - Ensure columns are named: M#, Name, Fall 2026, Spring 2027, etc.
+   - Import your data into excel using `Data -> Get Data -> From File -> Excel -> Projections sheet` imported sheet must be titled `imported-data` otherwise it will error
+   - Ensure columns are named: M#, Name, Fall 2026, Spring 2027, etc. _
    - Make a copy of the current excel sheet, always keep a backup! This will add data to your sheet!
 
 2. **Import the VBA script into excel**
-    - Using the desktop program you can press `ALT + F11` Then you can insert this module through Insert -> Module and copy UpdateMustHave.vba content into that file. Make sure to save!
+    1. Copy the raw data from [UpdateMustHave.vba](https://raw.githubusercontent.com/OlsonTyler0/Projection-Automation/refs/heads/main/UpdateMustHaveClasses.vba) to your clipboard with `CTRL + A` + `CTRL + C` 
+    2. Open your Excel workbook in which you want to use this system
+    3. Open the VBA Editor `Alt + F11`
+    4. Click `Insert -> Module`
+
+
+    <img width="295" height="181" alt="image" src="https://github.com/user-attachments/assets/6218b106-a2c9-4729-ae64-8f3246f8402a" />
+
+
+    5. Paste the content wifrom `UpdateMustHaveClasses.vba` into a new module in your workbook with `CTRL + V`
+    6. Save the content to the workbook `CTRL + S` _(you will see a warning about how it will save to the workbook, just hit the "save" button)_
+    7. (Optional) Save the workbook as `.xlsm` (macro-enabled format)
+      This step would only need to be done if the macro needs to STAY on the excel workbook.
 
 2. **Run the import:**
-    - Using `ALT + F8` select "SetupDashboard" OR "ImportProjections" to start the script and allow it to change data.
+    - Press `ALT + F8` to open the macro menu; select "SetupDashboard" OR "ImportProjections" to start the script and allow it to change data.
    - The script will:
      - Read all course sheets (ACC 711 - FA26, MGT 534 - SP26, etc.)
      - Match students from imported-data to course sheets
@@ -132,6 +119,13 @@ EX234567    | Jane Smith  | Yes                | Graduating FA26
 ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+<!-- Logic Breakdown -->
+## Logic
+This script looks at the following in order to function
+
+Parses all workbook titles and precieves them as what the usual predicition sheet does: "Fall 26" -> Loops through all the sheets one by one parsing the class title from the sheet title and looking for that specified class in that specified semester -> Adds the student if a match is found -> Creates a dashboard
+
 
 <!-- LICENSE -->
 ## License

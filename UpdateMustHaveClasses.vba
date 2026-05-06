@@ -20,7 +20,7 @@ Option Explicit
 ' ================================================================
 
 ' ----------------------------------------------------------------
-'  PUBLIC ENTRY POINT — bound to the "Import Projections" button 
+'  ENTRY POINT — bound to the "Import Projections" button 
 '  You can also run this directly with ALT + F8, select "ImportProjections", and click Run.
 ' ----------------------------------------------------------------
 Sub ImportProjections()

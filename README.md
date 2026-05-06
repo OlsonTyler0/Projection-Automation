@@ -64,10 +64,12 @@ This is a script intended to be used with excel sheets historically used by the 
 ## Usage
 
 ### Basic Workflow
+ - Make a copy of the current excel sheet, always keep a backup! This will add data to your sheet!
 
 1. **Prepare your data:**
-   - Import your data into excel using `Data -> Get Data -> From File -> Excel -> Projections sheet` imported sheet must be titled `imported-data` otherwise it will error
-   - Ensure columns are named: M#, Name, Fall 2026, Spring 2027, etc. _
+   - Import your data into excel using `Data -> Get Data -> From File -> Excel -> Projections sheet` import the `AY ##-##` workbook. ## being the academic year.
+   - Rename the imported sheet to: `imported-data`
+   - Ensure columns in the imported data are named: M#, Name, Fall 2026, Spring 2027, etc. _
    - Make a copy of the current excel sheet, always keep a backup! This will add data to your sheet!
 
 2. **Import the VBA script into excel**
@@ -76,17 +78,22 @@ This is a script intended to be used with excel sheets historically used by the 
     3. Open the VBA Editor `Alt + F11`
     4. Click `Insert -> Module`
 
-
     <img width="295" height="181" alt="image" src="https://github.com/user-attachments/assets/6218b106-a2c9-4729-ae64-8f3246f8402a" />
 
 
     5. Paste the content wifrom `UpdateMustHaveClasses.vba` into a new module in your workbook with `CTRL + V`
-    6. Save the content to the workbook `CTRL + S` _(you will see a warning about how it will save to the workbook, just hit the "save" button)_
-    7. (Optional) Save the workbook as `.xlsm` (macro-enabled format)
+    6. Save the content to the workbook `CTRL + S`
+
+  <img width="832" height="198" alt="image" src="https://github.com/user-attachments/assets/4545672c-9ffe-428e-878b-4124bba46f20" />
+  
+  *This error is expected. See the optional step below if you wish to fix this error.*
+    
+  8. Hit "Save"
+  9. (Optional) Save the workbook as `.xlsm` (macro-enabled format)
       This step would only need to be done if the macro needs to STAY on the excel workbook.
 
 2. **Run the import:**
-    - Press `ALT + F8` to open the macro menu; select "SetupDashboard" OR "ImportProjections" to start the script and allow it to change data.
+    - Press `ALT + F8` to open the macro menu; select "SetupDashboard" OR "ImportProjections" to start the script.
    - The script will:
      - Read all course sheets (ACC 711 - FA26, MGT 534 - SP26, etc.)
      - Match students from imported-data to course sheets
@@ -142,7 +149,6 @@ Tyler Olson - [@tyler-s-olson](https://linkedin.com/in/tyler-s-olson) - to329s@m
 Project Link: [https://github.com/OlsonTyler0/Projection-Automation](https://github.com/OlsonTyler0/Projection-Automation)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
-
 
 
 <!-- MARKDOWN LINKS & IMAGES -->
